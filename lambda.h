@@ -1,5 +1,5 @@
-#ifndef __LAMBDA_H__
-#define __LAMBDA_H__
+#ifndef LAMBDA_H
+#define LAMBDA_H
 
 // structures
 
@@ -18,4 +18,4 @@ double set_ellipsoid_bound(int dim, int num_cands, double factor, double* trian_
 int compare_candidates(const void* first, const void* second);
 int compare_norms(const void* first, const void* second);
 
-#endif //__LAMBDA_H__
+#endif //LAMBDA_H

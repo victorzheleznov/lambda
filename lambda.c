@@ -7,20 +7,24 @@
 
 void lambda(int dim, int num_cands, double* trian_matr, double* diag_matr, double* est, int* found, candidates* cands)
 {
-	// input:
-	// dim - dimension of estimate
-	// num_cands - requested number of candidates
-	// trian_matr - array of size (dim * dim) with unit lower triangular matrix of L^TDL decomposition of the covariance matrix of the float ambiguities
-	// diag_matr - array of size (dim) with diagonal matrix of L^TDL decomposition of the covariance matrix of the float ambiguities
-	// est - array of size (dim) with float ambiguities
-	//
-	// output:
-	// found - number of candidates found by algorithm
-	// cands - array of structures (size (num_cands)) with integer ambiguities (size (dim)) and norm values
-	//
-	// trian_matr, diag_mat, est will be overwritten!
-	//
-	// references:
+	// Main routine for LAMBDA method algorithm
+
+	// INPUT:
+	// dim — dimension of estimate
+	// num_cands — requested number of candidates
+	// trian_matr — array of size (dim * dim) with unit lower triangular matrix from L^TDL decomposition of the float ambiguities covariance matrix
+	// diag_matr — array of size (dim) with diagonal matrix from L^TDL decomposition of the float ambiguities covariance matrix
+	// est — array of size (dim) with float ambiguities
+
+	// OUTPUT:
+	// found — number of candidates found by algorithm
+	// cands — array of size (num_cands) with integer ambiguity vectors of size (dim) and corresponding squared norms (sorted according to the norm)
+
+	// NOTE:
+	// 1. trian_matr, diag_mat, est will be overwritten!
+	// 2. Memory for cands (and integer ambiguity vectors inside) should be allocated before calling this routine
+
+	// REFERENCES:
 	// 1. De Jonge P, Tiberius C (1996) The LAMBDA method of intger ambiguity estimation: implementation aspects
 
 	int i = 0;
@@ -63,18 +67,22 @@ void lambda(int dim, int num_cands, double* trian_matr, double* diag_matr, doubl
  
 void transformation(int dim, double* trian_matr, double* diag_matr, double* est, int* transf_matr)
 {
-	// input:
-	// dim - dimension of estimate
-	// trian_matr - array of size (dim * dim) with unit lower triangular matrix of L^TDL decomposition of the covariance matrix of the float ambiguities
-	// diag_matr - array of size (dim) with diagonal matrix of L^TDL decomposition of the covariance matrix of the float ambiguities
-	// est - array of size (dim) with float ambiguities
-	//
-	// output:
-	// transf_matr - transpose and inverse matrix to integer Z-transformation matrix
-	//
-	// trian_matr, diag_mat, est will be transformed to correspond to new ambiguities!
-	//
-	// references:
+	// Z-transformation calculation (decorrelation)
+
+	// INPUT:
+	// dim — dimension of estimate
+	// trian_matr — array of size (dim * dim) with unit lower triangular matrix from L^TDL decomposition of the float ambiguities covariance matrix
+	// diag_matr — array of size (dim) with diagonal matrix from L^TDL decomposition of the float ambiguities covariance matrix
+	// est — array of size (dim) with float ambiguities
+
+	// OUTPUT:
+	// transf_matr — transpose and inverse matrix to integer Z-transformation matrix
+
+	// NOTE:
+	// 1. trian_matr, diag_mat, est will be transformed to correspond to the new ambiguities!
+	// 2. Memory for transf_matr should be allocated before calling this routine
+
+	// REFERENCES:
 	// 1. De Jonge P, Tiberius C (1996) The LAMBDA method of intger ambiguity estimation: implementation aspects
 
 	int swap = 1;
@@ -96,6 +104,8 @@ void transformation(int dim, double* trian_matr, double* diag_matr, double* est,
 	double lambda_3 = 0.0;
 	double temp = 0.0;
 
+	// transformation matrix = identity matrix at the beginning of algotithm
+
 	for (i = 0; i < dim; i++)
 	{
 		for (j = 0; j < dim; j++)
@@ -104,6 +114,8 @@ void transformation(int dim, double* trian_matr, double* diag_matr, double* est,
 			else transf_matr[i * dim + j] = 0;
 		}
 	}
+
+	// main algorithm
 
 	while (swap == 1)
 	{
@@ -184,6 +196,25 @@ void transformation(int dim, double* trian_matr, double* diag_matr, double* est,
 
 void search(int dim, int num_cands, double* trian_matr, double* diag_matr, double* est, int* found, candidates* cands)
 {
+	// Integer ambiguity vector search (closest to a given float vector, in a least squares sence)
+
+	// INPUT:
+	// dim — dimension of estimate
+	// num_cands — number of requested candidates
+	// trian_matr — array of size (dim * dim) with unit lower triangular matrix from L^TDL decomposition of the float ambiguities covariance matrix
+	// diag_matr — array of size (dim) with diagonal matrix from L^TDL decomposition of the float ambiguities covariance matrix
+	// est — array of size (dim) with float ambiguities
+
+	// OUTPUT:
+	// found — number of candidates found
+	// cands — array of size (num_cands) with integer ambiguity vectors of size (dim) and corresponding squared norms (sorted according to the norm)
+
+	// NOTE:
+	// Memory for cands (and integer ambiguity vectors inside) should be allocated before calling this routine
+
+	// REFERENCES:
+	// 1. De Jonge P, Tiberius C (1996) The LAMBDA method of intger ambiguity estimation: implementation aspects
+
 	// counters
 
 	int i = 0;
@@ -411,6 +442,8 @@ void search(int dim, int num_cands, double* trian_matr, double* diag_matr, doubl
 
 int compare_candidates(const void* first, const void* second)
 {
+	// Routine for qsort(): compare candidates with respect to the squared norm
+
 	const candidates* first_cand = (const candidates*) first;
 	const candidates* second_cand = (const candidates*) second;
 
@@ -421,6 +454,22 @@ int compare_candidates(const void* first, const void* second)
 
 double set_ellipsoid_bound(int dim, int num_cands, double factor, double* trian_inv, double* diag_inv, double* est)
 {
+	// Initial size of the search ellipsoid calculation
+
+	// INPUT:
+	// dim — dimension of estimate
+	// num_cands — number of requested candidates
+	// factor — multiplication factor for the volume of the resulting search ellipsoid
+	// trian_inv — array of size (dim * dim) with unit lower triangular matrix from L^TDL decomposition of the float ambiguities inverse covariance matrix
+	// diag_inv — array of size (dim) with diagonal matrix from L^TDL decomposition of the float ambiguities inverse covariance matrix
+	// est — array of size (dim) with float ambiguities
+
+	// OUTPUT:
+	// search ellipsoid bound
+
+	// REFERENCES:
+	// 1. De Jonge P, Tiberius C (1996) The LAMBDA method of intger ambiguity estimation: implementation aspects
+
 	int i = 0;
 	int j = 0;
 	int k = 0;
@@ -525,8 +574,19 @@ int compare_norms(const void* first, const void* second)
 
 void decomposition(int dim, double* matr, double* trian_matr, double* diag_matr)
 {
-	// L^TDL
+	// L^TDL decomposition
 
+	// INPUT:
+	// dim — dimension of matrix
+	// matr — array of size (dim * dim) with symmetric matrix
+	
+	// OUTPUT:
+	// trian_matr — array of size (dim * dim) with unit lower triangular matrix L
+	// diag_matr — array of size (dim) with diagonal matrix D
+
+	// NOTE:
+	// Memory for trian_matr and diag_matr should be allocated before calling this routine
+	
 	int i = 0;
 	int j = 0;
 	int k = 0;
